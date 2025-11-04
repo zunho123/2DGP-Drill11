@@ -17,18 +17,16 @@ TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 10.0
 
-animation_names = ['Walk']
+ANIM_FRAMES = {'Walk': 10, 'dead': 12}
 
 class Zombie:
     images = None
 
-    class Zombie:
-        images = None
     def load_images(self):
-        if Zombie.images == None:
+        if Zombie.images is None:
             Zombie.images = {}
-            for name in animation_names:
-                Zombie.images[name] = [load_image("./zombie/" + name + " (%d)" % i + ".png") for i in range(1, 11)]
+            for name, count in ANIM_FRAMES.items():
+                Zombie.images[name] = [load_image("./zombie/" + name + " (%d).png" % i) for i in range(1, count + 1)]
 
     def __init__(self):
         self.x, self.y = random.randint(1600 - 800, 1600), 150
@@ -37,30 +35,38 @@ class Zombie:
         self.dir = random.choice([-1, 1])
         self.scale = 1.0
         self.shrink = False
-
+        self.state = 'Walk'
 
     def get_bb(self):
-        w = 100 * self.scale
-        h = 100 * self.scale
-        return self.x - w, self.y - h, self.x + w, self.y + h
+        hw = 100 * self.scale
+        hh = 100 * self.scale
+        return self.x - hw, self.y - hh, self.x + hw, self.y + hh
 
     def update(self):
-        self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % FRAMES_PER_ACTION
+        if self.state == 'dead':
+            inc = FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time
+            self.frame = min(self.frame + inc, len(Zombie.images['dead']) - 1)
+            if int(self.frame) >= len(Zombie.images['dead']) - 1:
+                game_world.remove_object(self)
+            return
+        self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % len(Zombie.images['Walk'])
         self.x += RUN_SPEED_PPS * self.dir * game_framework.frame_time
         if self.x > 1600:
             self.dir = -1
         elif self.x < 800:
             self.dir = 1
         self.x = clamp(800, self.x, 1600)
-        pass
 
     def draw(self):
-        w = 200 * self.scale
-        h = 200 * self.scale
-        if self.dir < 0:
-            Zombie.images['Walk'][int(self.frame)].composite_draw(0, 'h', self.x, self.y, w, h)
+        if self.state == 'dead':
+            img = Zombie.images['dead'][int(self.frame)]
+            img.draw(self.x, self.y, 200 * self.scale, 200 * self.scale)
         else:
-            Zombie.images['Walk'][int(self.frame)].draw(self.x, self.y, w, h)
+            img = Zombie.images['Walk'][int(self.frame)]
+            if self.dir < 0:
+                img.composite_draw(0, 'h', self.x, self.y, 200 * self.scale, 200 * self.scale)
+            else:
+                img.draw(self.x, self.y, 200 * self.scale, 200 * self.scale)
         draw_rectangle(*self.get_bb())
 
     def handle_event(self, event):
@@ -68,27 +74,20 @@ class Zombie:
 
     def handle_collision(self, group, other):
         if group == 'zombie:ball':
-            if self.shrink:
+            if self.state == 'dead':
                 return
             fired = getattr(other, 'fired', False)
             on_ground = hasattr(other, 'y') and other.y <= 65
-            if fired and not on_ground:
+            if not fired or on_ground:
+                return
+            if not self.shrink:
                 bottom = self.y - 100 * self.scale
                 self.scale *= 0.5
                 self.y = bottom + 100 * self.scale
                 self.shrink = True
                 game_world.remove_object(other)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+            else:
+                self.state = 'dead'
+                self.frame = 0
+                game_world.remove_object(other)
