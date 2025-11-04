@@ -53,6 +53,9 @@ def init():
 def update():
     game_world.update()
     game_world.handle_collision()
+    if not any(isinstance(o, Zombie) for layer in game_world.world for o in layer):
+        print('Game Clear!')
+        game_framework.quit()
 
 def draw():
     clear_canvas()
