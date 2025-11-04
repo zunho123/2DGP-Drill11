@@ -60,7 +60,7 @@ class Zombie:
     def draw(self):
         if self.state == 'dead':
             img = Zombie.images['dead'][int(self.frame)]
-            img.draw(self.x, self.y, 200 * self.scale, 200 * self.scale)
+            img.draw(self.x, self.y - 10, 200 * self.scale, 200 * self.scale)
         else:
             img = Zombie.images['Walk'][int(self.frame)]
             if self.dir < 0:
