@@ -22,21 +22,26 @@ animation_names = ['Walk']
 class Zombie:
     images = None
 
+    class Zombie:
+        images = None
     def load_images(self):
         if Zombie.images == None:
             Zombie.images = {}
             for name in animation_names:
-                Zombie.images[name] = [load_image("./zombie/"+ name + " (%d)" % i + ".png") for i in range(1, 11)]
+                Zombie.images[name] = [load_image("./zombie/" + name + " (%d)" % i + ".png") for i in range(1, 11)]
 
     def __init__(self):
         self.x, self.y = random.randint(1600-800, 1600), 150
         self.load_images()
         self.frame = random.randint(0, 9)
         self.dir = random.choice([-1,1])
+        self.scale = 1.0
 
 
     def get_bb(self):
-        return self.x - 100, self.y - 100, self.x + 100, self.y + 100
+        hw = 100 * self.scale
+        hh = 100 * self.scale
+        return self.x - hw, self.y - hh, self.x + hw, self.y + hh
 
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % FRAMES_PER_ACTION
@@ -48,16 +53,36 @@ class Zombie:
         self.x = clamp(800, self.x, 1600)
         pass
 
-
     def draw(self):
+        w = 200 * self.scale
+        h = 200 * self.scale
         if self.dir < 0:
-            Zombie.images['Walk'][int(self.frame)].composite_draw(0, 'h', self.x, self.y, 200, 200)
+            Zombie.images['Walk'][int(self.frame)].composite_draw(0, 'h', self.x, self.y, w, h)
         else:
-            Zombie.images['Walk'][int(self.frame)].draw(self.x, self.y, 200, 200)
+            Zombie.images['Walk'][int(self.frame)].draw(self.x, self.y, w, h)
         draw_rectangle(*self.get_bb())
 
     def handle_event(self, event):
         pass
 
     def handle_collision(self, group, other):
-        pass
+        if group == 'zombie:ball':
+            fired = getattr(other, 'fired', False)
+            on_ground = hasattr(other, 'y') and other.y <= 65
+            if fired and not on_ground:
+                self.scale *= 0.5
+                game_world.remove_object(other)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

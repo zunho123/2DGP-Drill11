@@ -35,7 +35,6 @@ def init():
     balls = [Ball(random.randint(100, 1600-100), 60, 0) for _ in range(30)]
     game_world.add_objects(balls, 1)
 
-    #공과 소년 사이의 충돌검사가 필요하다는 정보를 추가
     game_world.add_collision_pair('boy:ball', boy, None)
     for ball in balls:
         game_world.add_collision_pair('boy:ball', None, ball)
@@ -45,6 +44,11 @@ def init():
     game_world.add_collision_pair('boy:zombie', boy, None)
     for z in zombies:
         game_world.add_collision_pair('boy:zombie', None, z)
+
+    for z in zombies:
+        game_world.add_collision_pair('zombie:ball', z, None)
+    for ball in balls:
+        game_world.add_collision_pair('zombie:ball', None, ball)
 
 def update():
     game_world.update()
