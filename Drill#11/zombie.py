@@ -31,17 +31,18 @@ class Zombie:
                 Zombie.images[name] = [load_image("./zombie/" + name + " (%d)" % i + ".png") for i in range(1, 11)]
 
     def __init__(self):
-        self.x, self.y = random.randint(1600-800, 1600), 150
+        self.x, self.y = random.randint(1600 - 800, 1600), 150
         self.load_images()
         self.frame = random.randint(0, 9)
-        self.dir = random.choice([-1,1])
+        self.dir = random.choice([-1, 1])
         self.scale = 1.0
+        self.shrink = False
 
 
     def get_bb(self):
-        hw = 100 * self.scale
-        hh = 100 * self.scale
-        return self.x - hw, self.y - hh, self.x + hw, self.y + hh
+        w = 100 * self.scale
+        h = 100 * self.scale
+        return self.x - w, self.y - h, self.x + w, self.y + h
 
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % FRAMES_PER_ACTION
@@ -67,10 +68,15 @@ class Zombie:
 
     def handle_collision(self, group, other):
         if group == 'zombie:ball':
+            if self.shrink:
+                return
             fired = getattr(other, 'fired', False)
             on_ground = hasattr(other, 'y') and other.y <= 65
             if fired and not on_ground:
+                bottom = self.y - 100 * self.scale
                 self.scale *= 0.5
+                self.y = bottom + 100 * self.scale
+                self.shrink = True
                 game_world.remove_object(other)
 
 
